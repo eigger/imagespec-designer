@@ -8,8 +8,8 @@ version = "0.1.0"
 description = "Framework-neutral visual editor and document tools for imagespec layouts"
 readme = "README.md"
 requires-python = ">=3.13"
-license = "MIT"
-license-files = ["LICENSE", "LICENSE-APACHE-2.0", "LICENSE-BLE-ESL-DESIGNER", "LICENSE-MATERIAL-DESIGN-ICONS", "NOTICE"]
+license = "MIT AND Apache-2.0"
+license-files = ["LICENSE", "NOTICE", "licenses/*.txt"]
 authors = [{name = "eigger"}]
 urls = {Homepage = "https://github.com/eigger/imagespec-designer", Repository = "https://github.com/eigger/imagespec-designer", Issues = "https://github.com/eigger/imagespec-designer/issues"}
 dependencies = [

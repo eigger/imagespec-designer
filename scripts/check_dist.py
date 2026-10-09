@@ -19,12 +19,11 @@ REQUIRED_WHEEL_ASSETS = {
     "imagespec_designer/templates/simple-card.yaml",
     "imagespec_designer/templates/price-tag.yaml",
 }
-REQUIRED_LICENSES = {
-    "LICENSE",
+REQUIRED_LICENSE_FILES = {"LICENSE", "NOTICE", "licenses/Apache-2.0.txt"}
+OBSOLETE_LICENSE_FILES = {
     "LICENSE-APACHE-2.0",
     "LICENSE-BLE-ESL-DESIGNER",
     "LICENSE-MATERIAL-DESIGN-ICONS",
-    "NOTICE",
 }
 
 
@@ -43,12 +42,30 @@ def check_dist(directory: Path) -> None:
         missing_assets = REQUIRED_WHEEL_ASSETS - names
         if missing_assets:
             raise SystemExit(f"wheel is missing assets: {sorted(missing_assets)}")
-        bundled_licenses = {name.rsplit("/", 1)[-1] for name in names if "/licenses/" in name}
-        missing_licenses = REQUIRED_LICENSES - bundled_licenses
+        metadata_name = next(name for name in names if name.endswith(".dist-info/METADATA"))
+        dist_info = metadata_name.removesuffix("METADATA")
+        bundled_licenses = {
+            name.removeprefix(dist_info + "licenses/")
+            for name in names
+            if name.startswith(dist_info + "licenses/")
+        }
+        missing_licenses = REQUIRED_LICENSE_FILES - bundled_licenses
         if missing_licenses:
             raise SystemExit(f"wheel is missing license files: {sorted(missing_licenses)}")
-        metadata_name = next(name for name in names if name.endswith(".dist-info/METADATA"))
+        unexpected_licenses = bundled_licenses - REQUIRED_LICENSE_FILES
+        if unexpected_licenses:
+            raise SystemExit(
+                f"wheel includes unexpected license files: {sorted(unexpected_licenses)}"
+            )
+        present_obsolete = {Path(name).name for name in names} & OBSOLETE_LICENSE_FILES
+        if present_obsolete:
+            raise SystemExit(
+                f"wheel includes obsolete duplicate licenses: {sorted(present_obsolete)}"
+            )
         metadata = archive.read(metadata_name).decode()
+        expected_license = project["license"]
+        if f"License-Expression: {expected_license}" not in metadata.splitlines():
+            raise SystemExit(f"wheel metadata does not declare {expected_license!r}")
         requirements = [
             line.removeprefix("Requires-Dist: ")
             for line in metadata.splitlines()
@@ -60,10 +77,27 @@ def check_dist(directory: Path) -> None:
             raise SystemExit(f"wheel metadata lacks the datamatrix extra minimum: {requirements}")
 
     with tarfile.open(sdists[0], "r:gz") as archive:
-        source_names = {Path(member.name).name for member in archive.getmembers()}
-        missing_sources = (REQUIRED_LICENSES | {"pyproject.toml", "README.md"}) - source_names
+        source_paths = {
+            "/".join(Path(member.name).parts[1:])
+            for member in archive.getmembers()
+            if len(Path(member.name).parts) > 1
+        }
+        required_sources = REQUIRED_LICENSE_FILES | {
+            "pyproject.toml",
+            "README.md",
+            "README.ko.md",
+            "MANIFEST.in",
+            "docs/development.md",
+            "docs/releasing.md",
+        }
+        missing_sources = required_sources - source_paths
         if missing_sources:
             raise SystemExit(f"sdist is missing project files: {sorted(missing_sources)}")
+        present_obsolete = {Path(name).name for name in source_paths} & OBSOLETE_LICENSE_FILES
+        if present_obsolete:
+            raise SystemExit(
+                f"sdist includes obsolete duplicate licenses: {sorted(present_obsolete)}"
+            )
 
     print(f"Validated {wheels[0].name} and {sdists[0].name}")
 
