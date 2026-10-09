@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "imagespec-designer"
+version = "0.1.0"
+description = "Framework-neutral visual editor and document tools for imagespec layouts"
+readme = "README.md"
+requires-python = ">=3.13"
+license = "MIT"
+license-files = ["LICENSE", "LICENSE-APACHE-2.0", "LICENSE-BLE-ESL-DESIGNER", "LICENSE-MATERIAL-DESIGN-ICONS", "NOTICE"]
+authors = [{name = "eigger"}]
+urls = {Homepage = "https://github.com/eigger/imagespec-designer", Repository = "https://github.com/eigger/imagespec-designer", Issues = "https://github.com/eigger/imagespec-designer/issues"}
+dependencies = [
+  "imagespec>=1.0.1",
+  "Pillow>=10.4",
+  "PyYAML>=6.0.1",
+]
+
+[project.optional-dependencies]
+ha = ["homeassistant>=2025.1"]
+datamatrix = ["imagespec[datamatrix]>=1.0.1"]
+dev = ["pytest>=8", "build>=1.2", "ruff>=0.6", "twine>=6"]
+
+[project.scripts]
+imagespec-designer-demo = "imagespec_designer.demo:main"
+
+[tool.setuptools.packages.find]
+include = ["imagespec_designer*"]
+
+[tool.setuptools.package-data]
+imagespec_designer = ["web/*", "web/locales/*.json", "templates/*.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "BLE", "RUF"]

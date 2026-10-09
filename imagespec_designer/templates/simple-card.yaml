@@ -1,0 +1,30 @@
+name: Simple card
+description: A title and subtitle in a framed card.
+parameters:
+  title: {type: string, default: PRODUCT}
+  subtitle: {type: string, default: Ready to use}
+document:
+  version: 1
+  background: white
+  elements:
+    - id: frame
+      type: imagespec
+      x: 8
+      y: 8
+      width: 184
+      height: 104
+      spec: {type: rectangle, fill: white, outline: black, width: 2}
+    - id: title
+      type: imagespec
+      x: 18
+      y: 23
+      width: 164
+      height: 32
+      spec: {type: text_fit, value: "${title}", size: 25, min_size: 13, color: black}
+    - id: subtitle
+      type: imagespec
+      x: 18
+      y: 66
+      width: 164
+      height: 26
+      spec: {type: text_fit, value: "${subtitle}", size: 17, color: black}

@@ -1,0 +1,30 @@
+name: Price tag
+description: A bold price with a product name.
+parameters:
+  product: {type: string, default: Example item}
+  price: {type: string, default: "$12.99"}
+document:
+  version: 1
+  background: white
+  elements:
+    - id: product
+      type: imagespec
+      x: 10
+      y: 10
+      width: 180
+      height: 26
+      spec: {type: text_fit, value: "${product}", size: 19, min_size: 12, color: black}
+    - id: rule
+      type: imagespec
+      x: 10
+      y: 43
+      width: 180
+      height: 3
+      spec: {type: line, fill: black, width: 2}
+    - id: price
+      type: imagespec
+      x: 10
+      y: 51
+      width: 180
+      height: 52
+      spec: {type: text_fit, value: "${price}", size: 42, min_size: 22, color: black}

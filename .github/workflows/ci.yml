@@ -1,0 +1,143 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install development tools
+        run: python -m pip install -e ".[dev]"
+      - name: Ruff lint
+        run: python -m ruff check .
+      - name: Ruff format check
+        run: python -m ruff format --check .
+      - name: Check Python syntax in the distributable asset audit
+        run: python -m compileall -q imagespec_designer scripts tests
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install package and optional Data Matrix renderer
+        run: python -m pip install -e ".[dev,datamatrix]"
+      - name: Run Python tests
+        run: python -m pytest -q
+
+  test-min-deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          python-version: "3.13"
+      - name: Install lowest allowed direct dependencies
+        run: |
+          uv venv
+          uv pip install --resolution lowest-direct -e ".[dev,datamatrix]"
+          uv pip list
+      - name: Test the declared dependency floors
+        run: uv run --no-sync python -m pytest -q
+
+  ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install Python runtime
+        run: python -m pip install -e .
+      - name: Install locked browser test dependencies
+        run: npm ci
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Run editor browser tests
+        run: npm run test:ui
+        env:
+          PYTHON: python
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [lint, test, test-min-deps, ui]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install build and metadata tools
+        run: python -m pip install -e ".[dev]"
+      - name: Build source and wheel distributions
+        run: python -m build
+      - name: Validate distribution metadata
+        run: python -m twine check dist/*
+      - name: Audit wheel assets, licenses, and dependency metadata
+        run: python scripts/check_dist.py
+      - name: Install wheel into an isolated target and smoke-test it
+        run: |
+          python -m pip install --target "$RUNNER_TEMP/imagespec-designer-wheel" dist/*.whl
+          cd "$RUNNER_TEMP"
+          PYTHONPATH="$RUNNER_TEMP/imagespec-designer-wheel" python - <<'PY'
+          from importlib.metadata import version
+          from importlib.resources import files
+
+          import imagespec_designer as designer
+
+          assert designer.__version__ == version("imagespec-designer")
+          assert files("imagespec_designer").joinpath("web", "locales", "ko.json").is_file()
+          image = designer.render_image(
+              [{"type": "rectangle", "x_start": 1, "y_start": 1, "x_end": 10, "y_end": 8}],
+              designer.CanvasProfile(16, 12),
+          )
+          assert image.size == (16, 12)
+          print(f"Installed wheel {designer.__version__}; imagespec {designer.ENGINE_VERSION}")
+          PY
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/*
+          if-no-files-found: error

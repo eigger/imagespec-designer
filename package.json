@@ -1,0 +1,11 @@
+{
+  "name": "imagespec-designer-ui",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:ui": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.0"
+  }
+}

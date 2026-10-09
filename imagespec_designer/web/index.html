@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>imagespec designer</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <strong id="brand">imagespec designer</strong>
+      <span id="version" aria-label="Package version"></span>
+      <span id="profile"></span>
+      <div class="toolbar">
+        <button id="undo" title="Undo">↶</button
+        ><button id="redo" title="Redo">↷</button>
+        <button id="import">Import YAML</button
+        ><button id="export">Export design YAML</button
+        ><button id="export-payload">Export imagespec YAML</button>
+        <button id="templates">Templates</button
+        ><button id="save" class="primary">Save</button>
+      </div>
+    </header>
+    <main>
+      <aside class="tools">
+        <h2>Elements</h2>
+        <input id="search" type="search" placeholder="Filter elements" />
+        <div id="types"></div>
+        <h2>Layers</h2>
+        <div id="layers"></div>
+        <div class="stack-actions">
+          <button id="duplicate">Duplicate</button
+          ><button id="delete">Delete</button><button id="raise">Raise</button
+          ><button id="lower">Lower</button>
+        </div>
+      </aside>
+      <section class="stage">
+        <div class="canvas-scroll">
+          <div id="board">
+            <img id="preview" alt="Rendered canvas" />
+            <div id="overlay"></div>
+          </div>
+        </div>
+        <div class="status" id="status" role="status"></div>
+      </section>
+      <aside class="inspector">
+        <h2>Properties</h2>
+        <div id="properties">
+          <p>Select an element to edit its properties.</p>
+        </div>
+        <label class="background"
+          >Background <input id="background" value="white"
+        /></label>
+        <details>
+          <summary>Document JSON</summary>
+          <textarea id="json" spellcheck="false"></textarea
+          ><button id="apply-json">Apply JSON</button>
+        </details>
+      </aside>
+    </main>
+    <dialog id="yaml-dialog">
+      <form method="dialog">
+        <h2 id="dialog-title">YAML</h2>
+        <textarea id="yaml" spellcheck="false"></textarea>
+        <p id="dialog-message"></p>
+        <footer>
+          <button value="cancel">Close</button
+          ><button id="dialog-apply" value="default" class="primary">
+            Apply
+          </button>
+        </footer>
+      </form>
+    </dialog>
+    <dialog id="template-dialog">
+      <form method="dialog">
+        <h2>Design templates</h2>
+        <div id="template-list"></div>
+        <div id="template-params"></div>
+        <footer>
+          <button value="cancel">Cancel</button
+          ><button id="template-apply" value="default" class="primary">
+            Use template
+          </button>
+        </footer>
+      </form>
+    </dialog>
+    <script type="module" src="/designer.js"></script>
+  </body>
+</html>

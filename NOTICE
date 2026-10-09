@@ -1,0 +1,17 @@
+imagespec-designer — Third-Party Notices
+========================================
+
+The public renderer adapter delegates to imagespec. Its MIT and Apache-2.0
+licenses, notices and bundled asset license files are distributed alongside
+this package in LICENSE-APACHE-2.0 and the upstream NOTICE.
+
+The portable designer geometry strategies and starter specifications were
+adapted from the MIT-licensed BLE ESL designer:
+https://github.com/eigger/hass-ble-esl
+Copyright (c) 2025 eigger. The source license is included in LICENSE.
+
+The MDI icon name-to-glyph map in imagespec_designer/web/icons.json is derived
+from Material Design Icons metadata distributed with imagespec and the
+BLE ESL designer. The Material Design Icons font and metadata are licensed
+under Apache License 2.0; see LICENSE-MATERIAL-DESIGN-ICONS. The icon map is
+used only to provide suggestions for image-spec icon names.

@@ -1,0 +1,20 @@
+{
+  "Elements": "Elements",
+  "Layers": "Layers",
+  "Properties": "Properties",
+  "Filter elements": "Filter elements",
+  "Import YAML": "Import YAML",
+  "Export design YAML": "Export design YAML",
+  "Export imagespec YAML": "Export imagespec YAML",
+  "Templates": "Templates",
+  "Save": "Save",
+  "Apply properties": "Apply properties",
+  "Use template": "Use template",
+  "Select an element to edit its properties.": "Select an element to edit its properties.",
+  "Undo": "Undo",
+  "Redo": "Redo",
+  "Duplicate": "Duplicate",
+  "Delete": "Delete",
+  "Raise": "Raise",
+  "Lower": "Lower"
+}
