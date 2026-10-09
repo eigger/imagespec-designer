@@ -77,7 +77,17 @@ test("import imagespec YAML, export payload and apply a template", async ({
   await page
     .locator('#template-params input[data-param="title"]')
     .fill("Browser test");
+  const previewBeforeTemplate = await page
+    .locator("#preview")
+    .getAttribute("src");
+  await page.route("**/api/render", async (route) => {
+    await page.waitForTimeout(300);
+    await route.continue();
+  });
   await page.locator("#template-apply").click();
+  await expect
+    .poll(async () => page.locator("#preview").getAttribute("src"))
+    .not.toBe(previewBeforeTemplate);
   await expect(page.locator("#status")).toContainText("Template loaded");
   const doc = await page.evaluate(() => window.imagespecDesigner.getDocument());
   expect(doc.elements).toHaveLength(3);

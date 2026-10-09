@@ -98,11 +98,11 @@ function buttons() {
   $("undo").disabled = !undoStack.length;
   $("redo").disabled = !redoStack.length;
 }
-function setDoc(next) {
+async function setDoc(next) {
   doc = next;
   selected = doc.elements[0]?.id || null;
   sync();
-  render();
+  return await render();
 }
 function sync() {
   $("background").value = doc.background || "white";
@@ -438,7 +438,7 @@ async function render() {
   drawOverlay();
   try {
     const result = await api("render", { document: snapshot, profile });
-    if (request !== renderSequence) return;
+    if (request !== renderSequence) return false;
     $("preview").src = result.data_url;
     const warning = importWarnings.length
       ? ` · Import notes: ${importWarnings.join("; ")}`
@@ -448,6 +448,7 @@ async function render() {
       false,
       importWarnings.length > 0,
     );
+    return true;
   } catch (e) {
     if (request === renderSequence) {
       const warning = importWarnings.length
@@ -455,6 +456,7 @@ async function render() {
         : "";
       announce(`${e.message}${warning}`, true);
     }
+    return false;
   }
 }
 async function add(type) {
@@ -536,8 +538,7 @@ $("apply-json").onclick = async () => {
     const next = JSON.parse($("json").value);
     await api("validate", { document: next, profile });
     checkpoint();
-    setDoc(next);
-    announce("Document updated");
+    if (await setDoc(next)) announce("Document updated");
   } catch (e) {
     announce(e.message, true);
   }
@@ -572,13 +573,15 @@ $("dialog-apply").onclick = async (e) => {
     const result = await api("parseYaml", { text: $("yaml").value, profile });
     checkpoint();
     importWarnings = result.issues || [];
-    setDoc(result.document);
+    const rendered = await setDoc(result.document);
     $("yaml-dialog").close();
-    announce(
-      importWarnings.join("; ") || "YAML imported",
-      false,
-      importWarnings.length > 0,
-    );
+    if (rendered) {
+      announce(
+        importWarnings.join("; ") || "YAML imported",
+        false,
+        importWarnings.length > 0,
+      );
+    }
   } catch (error) {
     $("dialog-message").textContent = error.message;
   }
@@ -641,9 +644,9 @@ $("template-apply").onclick = async (e) => {
       profile,
     });
     checkpoint();
-    setDoc(result.document);
+    const rendered = await setDoc(result.document);
     $("template-dialog").close();
-    announce("Template loaded");
+    if (rendered) announce("Template loaded");
   } catch (err) {
     announce(err.message, true);
   }
@@ -668,7 +671,7 @@ const designerApi = {
   async setDocument(next) {
     await api("validate", { document: next, profile });
     checkpoint();
-    setDoc(clone(next));
+    await setDoc(clone(next));
     return clone(doc);
   },
   async validate(next = doc) {

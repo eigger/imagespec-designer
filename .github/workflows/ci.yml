@@ -96,6 +96,16 @@ jobs:
         run: npm run test:ui
         env:
           PYTHON: python
+      - name: Upload Playwright diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-test-results
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
 
   build:
     runs-on: ubuntu-latest
