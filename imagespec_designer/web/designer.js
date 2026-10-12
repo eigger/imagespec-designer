@@ -613,11 +613,13 @@ $("dialog-apply").onclick = async (e) => {
   }
 };
 $("save").onclick = async () => {
+  const snapshot = clone(doc);
+  const snapshotText = JSON.stringify(snapshot);
   try {
-    if (host.saveDocument) await host.saveDocument({ document: doc });
+    if (host.saveDocument) await host.saveDocument({ document: snapshot });
     else
-      localStorage.setItem("imagespec-designer-document", JSON.stringify(doc));
-    savedDocument = JSON.stringify(doc);
+      localStorage.setItem("imagespec-designer-document", snapshotText);
+    savedDocument = snapshotText;
     updateDirty();
     announce(tr("Saved"));
   } catch (e) {
