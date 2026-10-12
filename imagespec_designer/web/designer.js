@@ -40,6 +40,7 @@ let selected = null,
   selectedTemplate = null,
   renderSequence = 0,
   importWarnings = [];
+let savedDocument = null;
 const api = async (name, body = {}) => {
   if (host.api) return await host.api(name, body);
   if (host[name]) return await host[name](body);
@@ -57,9 +58,24 @@ const api = async (name, body = {}) => {
 };
 const clone = (v) => structuredClone(v);
 function announce(message, error = false, warning = false) {
-  $("status").textContent = message || "";
-  $("status").className =
+  const status = $("status");
+  status.replaceChildren(document.createTextNode(message || ""));
+  status.className =
     `status${error ? " error" : warning ? " warning" : ""}`;
+  if (error && message) {
+    const close = document.createElement("button");
+    close.type = "button";
+    close.textContent = "×";
+    close.title = tr("Dismiss error");
+    close.setAttribute("aria-label", tr("Dismiss error"));
+    close.onclick = () => announce("");
+    status.append(close);
+  }
+}
+function updateDirty() {
+  const dirty = savedDocument !== null && JSON.stringify(doc) !== savedDocument;
+  $("dirty").hidden = !dirty;
+  $("dirty").textContent = dirty ? tr("Unsaved changes") : "";
 }
 function applyTranslations() {
   const labels = {
@@ -110,6 +126,7 @@ function sync() {
   drawOverlay();
   drawLayers();
   drawProperties();
+  updateDirty();
 }
 function selectedElement() {
   return doc.elements.find((e) => e.id === selected);
@@ -118,14 +135,23 @@ function drawLayers() {
   const root = $("layers");
   root.replaceChildren();
   [...doc.elements].reverse().forEach((e) => {
-    let b = document.createElement("button");
+    const row = document.createElement("div");
+    row.className = "layer-row";
+    const b = document.createElement("button");
     b.className = `layer${e.id === selected ? " selected" : ""}`;
-    b.textContent = `${e.spec.type} · ${e.id.slice(0, 7)}`;
+    const label = e.spec.value ?? e.spec.text ?? e.spec.label ?? e.spec.title;
+    const detail =
+      typeof label === "string" && label.trim()
+        ? label.trim()
+        : e.id.slice(0, 7);
+    b.textContent = `${e.spec.type} · ${detail}`;
+    b.title = b.textContent;
     b.onclick = () => {
       selected = e.id;
       sync();
     };
-    root.append(b);
+    row.append(b);
+    root.append(row);
   });
 }
 function drawTypes(filter = "") {
@@ -591,11 +617,19 @@ $("save").onclick = async () => {
     if (host.saveDocument) await host.saveDocument({ document: doc });
     else
       localStorage.setItem("imagespec-designer-document", JSON.stringify(doc));
+    savedDocument = JSON.stringify(doc);
+    updateDirty();
     announce(tr("Saved"));
   } catch (e) {
     announce(e.message, true);
   }
 };
+window.addEventListener("beforeunload", (event) => {
+  if (savedDocument !== null && JSON.stringify(doc) !== savedDocument) {
+    event.preventDefault();
+    event.returnValue = "";
+  }
+});
 async function loadTemplates() {
   templates = await api("templates");
   $("template-list").replaceChildren();
@@ -719,6 +753,7 @@ async function init() {
       if (saved) doc = JSON.parse(saved);
     } catch {}
   }
+  savedDocument = JSON.stringify(doc);
   sync();
   await render();
 }

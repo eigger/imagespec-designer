@@ -16,5 +16,7 @@
   "Duplicate": "Duplicate",
   "Delete": "Delete",
   "Raise": "Raise",
-  "Lower": "Lower"
+  "Lower": "Lower",
+  "Unsaved changes": "Unsaved changes",
+  "Dismiss error": "Dismiss error"
 }

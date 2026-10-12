@@ -35,6 +35,11 @@ header strong {
   font-size: 11px;
   white-space: nowrap;
 }
+#dirty {
+  color: #9b5b00;
+  font-size: 12px;
+  white-space: nowrap;
+}
 #profile {
   color: var(--muted);
   flex: 1;
@@ -194,6 +199,22 @@ h2 {
 }
 .status.error {
   color: #ad2828;
+}
+.status button {
+  margin-left: 8px;
+  padding: 1px 6px;
+  font-size: 12px;
+}
+.layer-row {
+  display: flex;
+  gap: 4px;
+}
+.layer-row .layer {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .background {
   display: flex;

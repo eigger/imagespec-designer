@@ -16,5 +16,7 @@
   "Duplicate": "복제",
   "Delete": "삭제",
   "Raise": "위로",
-  "Lower": "아래로"
+  "Lower": "아래로",
+  "Unsaved changes": "저장되지 않은 변경사항",
+  "Dismiss error": "오류 닫기"
 }
