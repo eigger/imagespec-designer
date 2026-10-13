@@ -18,5 +18,6 @@
   "Raise": "위로",
   "Lower": "아래로",
   "Unsaved changes": "저장되지 않은 변경사항",
-  "Dismiss error": "오류 닫기"
+  "Dismiss error": "오류 닫기",
+  "Use arrow keys to move; Shift + Arrow moves 10 pixels.": "화살표 키로 이동하고 Shift + 화살표 키로 10픽셀 이동합니다."
 }

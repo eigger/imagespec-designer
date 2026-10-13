@@ -18,5 +18,6 @@
   "Raise": "Raise",
   "Lower": "Lower",
   "Unsaved changes": "Unsaved changes",
-  "Dismiss error": "Dismiss error"
+  "Dismiss error": "Dismiss error",
+  "Use arrow keys to move; Shift + Arrow moves 10 pixels.": "Use arrow keys to move; Shift + Arrow moves 10 pixels."
 }
