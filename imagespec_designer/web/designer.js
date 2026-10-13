@@ -139,16 +139,18 @@ function drawLayers() {
     row.className = "layer-row";
     const b = document.createElement("button");
     b.className = `layer${e.id === selected ? " selected" : ""}`;
+    b.dataset.id = e.id;
     const label = e.spec.value ?? e.spec.text ?? e.spec.label ?? e.spec.title;
     const detail =
       typeof label === "string" && label.trim()
         ? label.trim()
         : e.id.slice(0, 7);
     b.textContent = `${e.spec.type} · ${detail}`;
-    b.title = b.textContent;
+    b.title = `${b.textContent} · ${tr("Use arrow keys to move; Shift + Arrow moves 10 pixels.")}`;
     b.onclick = () => {
       selected = e.id;
       sync();
+      $("layers").querySelector(`[data-id="${CSS.escape(e.id)}"]`)?.focus();
     };
     row.append(b);
     root.append(row);
@@ -394,7 +396,23 @@ function drawOverlay() {
     f.style.width = `${Math.max(1, el.width) * scale}px`;
     f.style.height = `${Math.max(1, el.height) * scale}px`;
     f.dataset.id = el.id;
-    f.innerHTML = `<span class="name">${el.spec.type}</span>${el.id === selected ? '<i class="resize"></i>' : ""}`;
+    f.tabIndex = 0;
+    f.setAttribute("role", "button");
+    f.setAttribute("aria-pressed", String(el.id === selected));
+    f.setAttribute(
+      "aria-label",
+      `${el.spec.type}, x ${el.x}, y ${el.y}, ${el.width} × ${el.height}. ${tr("Use arrow keys to move; Shift + Arrow moves 10 pixels.")}`,
+    );
+    const name = document.createElement("span");
+    name.className = "name";
+    name.textContent = el.spec.type;
+    f.append(name);
+    if (el.id === selected) {
+      const resize = document.createElement("i");
+      resize.className = "resize";
+      resize.setAttribute("aria-hidden", "true");
+      f.append(resize);
+    }
     f.onpointerdown = (e) => beginDrag(e, el);
     f.onclick = (e) => {
       e.stopPropagation();
@@ -407,12 +425,13 @@ function drawOverlay() {
   });
 }
 function beginDrag(event, el) {
-  if (event.button !== 0) return;
+  if (event.button !== 0 || !event.isPrimary || dragging) return;
   event.preventDefault();
   selected = el.id;
   const resizing = event.target.classList.contains("resize");
   dragging = {
     id: el.id,
+    pointerId: event.pointerId,
     resizing,
     startX: event.clientX,
     startY: event.clientY,
@@ -424,9 +443,33 @@ function beginDrag(event, el) {
   drawLayers();
   drawProperties();
 }
+window.addEventListener(
+  "pointerdown",
+  (event) => {
+    if (dragging && event.pointerId !== dragging.pointerId) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  },
+  true,
+);
+window.addEventListener(
+  "click",
+  (event) => {
+    if (dragging) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  },
+  true,
+);
 $("overlay").onpointermove = (e) => {
-  if (!dragging) return;
-  const el = selectedElement();
+  if (!dragging || dragging.pointerId !== e.pointerId) return;
+  const el = doc.elements.find((element) => element.id === dragging.id);
+  if (!el) {
+    finishDrag(true);
+    return;
+  }
   const dx = Math.round((e.clientX - dragging.startX) / scale),
     dy = Math.round((e.clientY - dragging.startY) / scale),
     o = dragging.orig;
@@ -440,8 +483,13 @@ $("overlay").onpointermove = (e) => {
   dragging.changed ||= dx !== 0 || dy !== 0;
   drawOverlay();
 };
-$("overlay").onpointerup = () => {
-  if (dragging?.changed) {
+function finishDrag(cancel = false) {
+  if (!dragging) return;
+  if (cancel) {
+    doc = JSON.parse(dragging.snapshot);
+    sync();
+    render();
+  } else if (dragging.changed) {
     undoStack.push(dragging.snapshot);
     if (undoStack.length > 100) undoStack.shift();
     redoStack = [];
@@ -450,7 +498,14 @@ $("overlay").onpointerup = () => {
     buttons();
   }
   dragging = null;
+}
+$("overlay").onpointerup = (event) => {
+  if (dragging?.pointerId === event.pointerId) finishDrag();
 };
+$("overlay").onpointercancel = (event) => {
+  if (dragging?.pointerId === event.pointerId) finishDrag(true);
+};
+window.addEventListener("blur", () => finishDrag(true));
 $("overlay").onclick = () => {
   selected = null;
   drawOverlay();
@@ -688,17 +743,94 @@ $("template-apply").onclick = async (e) => {
   }
 };
 window.addEventListener("keydown", (e) => {
-  if ((e.metaKey || e.ctrlKey) && e.key === "z") {
+  const target = e.target;
+  if (!(target instanceof HTMLElement)) return;
+  if (dragging) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      finishDrag(true);
+    }
+    return;
+  }
+  if (target.closest("dialog[open]")) return;
+  const frame = target.closest(".frame");
+  const layer = target.closest(".layer");
+  if (frame && ["Enter", " "].includes(e.key)) {
+    e.preventDefault();
+    selected = frame.dataset.id;
+    sync();
+    $("overlay").querySelector(`[data-id="${CSS.escape(selected)}"]`)?.focus();
+    return;
+  }
+  const editing =
+    target.isContentEditable ||
+    ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+    e.preventDefault();
+    $("save").click();
+    return;
+  }
+  if (editing) return;
+  if (
+    frame &&
+    ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "d" ||
+      e.key === "Delete" ||
+      e.key === "Backspace")
+  )
+    selected = frame.dataset.id;
+  if (
+    layer &&
+    ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "d" ||
+      e.key === "Delete" ||
+      e.key === "Backspace")
+  )
+    selected = layer.dataset.id;
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
     e.preventDefault();
     e.shiftKey ? redo() : undo();
-  } else if ((e.metaKey || e.ctrlKey) && e.key === "y") {
+  } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "y") {
     e.preventDefault();
     redo();
+  } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "d") {
+    e.preventDefault();
+    $("duplicate").click();
   } else if (
     (e.key === "Delete" || e.key === "Backspace") &&
-    !["TEXTAREA", "INPUT"].includes(document.activeElement.tagName)
-  )
+    (target.closest("#board") || target.closest("#layers"))
+  ) {
+    e.preventDefault();
     $("delete").click();
+  } else if (
+    !e.metaKey &&
+    !e.ctrlKey &&
+    !e.altKey &&
+    ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key) &&
+    (frame || layer || target.closest("#board")) &&
+    (frame || layer || selectedElement())
+  ) {
+    e.preventDefault();
+    if (frame) selected = frame.dataset.id;
+    else if (layer) selected = layer.dataset.id;
+    const [dx, dy] = {
+      ArrowLeft: [-1, 0],
+      ArrowRight: [1, 0],
+      ArrowUp: [0, -1],
+      ArrowDown: [0, 1],
+    }[e.key];
+    const step = e.shiftKey ? 10 : 1;
+    const el = selectedElement();
+    checkpoint();
+    el.x += dx * step;
+    el.y += dy * step;
+    sync();
+    render();
+    requestAnimationFrame(() => {
+      if (layer)
+        $("layers").querySelector(`[data-id="${CSS.escape(el.id)}"]`)?.focus();
+      else
+        $("overlay").querySelector(`[data-id="${CSS.escape(el.id)}"]`)?.focus();
+    });
+  }
 });
 const designerApi = {
   getDocument() {
@@ -725,6 +857,7 @@ async function init() {
   $("profile").textContent =
     `${profile.name} · ${profile.width} × ${profile.height} · ${profile.palette}`;
   const language = (host.language || navigator.language || "en").split("-")[0];
+  document.documentElement.lang = language === "ko" ? "ko" : "en";
   try {
     const locale = await fetch(
       new URL(`locales/${language}.json`, import.meta.url),

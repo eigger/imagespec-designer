@@ -171,6 +171,11 @@ h2 {
   border: 2px solid #0d8790;
   background: #12919a14;
 }
+.frame:focus-visible {
+  outline: 2px solid #18232f;
+  outline-offset: 2px;
+  z-index: 1;
+}
 .frame .name {
   position: absolute;
   left: 0;
@@ -350,6 +355,43 @@ dialog footer {
   .canvas-scroll {
     place-items: start center;
     padding: 20px;
+  }
+}
+@media (max-width: 560px) {
+  body {
+    height: auto;
+    min-height: 100vh;
+  }
+  main {
+    flex: 1;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(45vh, auto) auto auto;
+  }
+  .stage,
+  .tools,
+  .inspector {
+    grid-column: 1;
+  }
+  .stage {
+    grid-row: 1;
+    min-height: 45vh;
+    padding: 10px;
+  }
+  .tools {
+    grid-row: 2;
+    border-right: 0;
+    border-top: 1px solid var(--line);
+  }
+  .inspector {
+    grid-row: 3;
+    max-height: none;
+    border-left: 0;
+  }
+  .toolbar {
+    width: 100%;
+  }
+  .toolbar button {
+    flex: 1 1 auto;
   }
 }
 .status.warning {
